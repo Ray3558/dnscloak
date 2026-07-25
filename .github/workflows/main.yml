@@ -1,10 +1,10 @@
-name: Find Dnscryptproxy Build Source
+name: Diagnose Dnscryptproxy
 
 on:
   workflow_dispatch:
 
 jobs:
-  scan:
+  diagnose:
     runs-on: macos-14
 
     steps:
@@ -12,7 +12,7 @@ jobs:
       - name: TEST NEW YAML
         run: |
           echo "=========================="
-          echo "FIND DNSCRYPT BUILD SOURCE"
+          echo "DNSCRYPT DIAGNOSTIC"
           echo "=========================="
 
 
@@ -22,60 +22,74 @@ jobs:
 
       - name: Show repository
         run: |
+          echo "===== PWD ====="
           pwd
+
+          echo "===== ROOT ====="
           ls -la
 
 
-      - name: Search build directory
+      - name: Search dnscrypt files
         run: |
-          echo "===== build directory ====="
-
-          find build \
-          -maxdepth 5 \
-          -type f \
-          -print || true
-
-
-      - name: Search scripts
-        run: |
-          echo "===== scripts ====="
-
-          find . \
-          \( \
-          -name "*.sh" \
-          -o -name "Makefile" \
-          -o -name "*.mk" \
-          -o -name "*.py" \
-          \) \
-          -print || true
-
-
-      - name: Search dnscrypt source
-        run: |
-          echo "===== dnscrypt source ====="
+          echo "===== DNSCRYPT FILES ====="
 
           find . \
           \( \
           -iname "*dnscrypt*" \
+          -o -iname "*Dnscrypt*" \
           -o -iname "*libdns*" \
           -o -iname "*proxy*" \
           \) \
           -print || true
 
 
-      - name: Check git tracked files
+      - name: Search headers
         run: |
-          echo "===== git files ====="
+          echo "===== HEADERS ====="
 
-          git ls-files | grep -Ei \
-          "dnscrypt|framework|build|script|make" \
+          find . \
+          \( \
+          -name "*.h" \
+          -o -name "*.hpp" \
+          \) \
+          | grep -Ei "dns|proxy|crypt" \
           || true
 
 
-      - name: Search Xcode reference
+      - name: Search frameworks
         run: |
-          echo "===== xcode reference ====="
+          echo "===== FRAMEWORKS ====="
+
+          find . \
+          -name "*.framework" \
+          -print || true
+
+
+      - name: Check frameworks json
+        run: |
+          echo "===== frameworks.json ====="
+
+          if [ -f platforms/ios/frameworks.json ]; then
+            cat platforms/ios/frameworks.json
+          else
+            echo "frameworks.json not found"
+          fi
+
+
+      - name: Check Xcode references
+        run: |
+          echo "===== XCODE REFERENCES ====="
 
           grep -R "Dnscryptproxy" \
           platforms/ios \
+          || true
+
+
+      - name: Check git tracked files
+        run: |
+          echo "===== GIT TRACKED ====="
+
+          git ls-files \
+          | grep -Ei \
+          "dnscrypt|proxy|framework|libdns|make|script" \
           || true
