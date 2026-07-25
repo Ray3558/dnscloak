@@ -1,10 +1,10 @@
-name: Test New Workflow
+name: Find Dnscryptproxy Build Source
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  scan:
     runs-on: macos-14
 
     steps:
@@ -12,7 +12,7 @@ jobs:
       - name: TEST NEW YAML
         run: |
           echo "=========================="
-          echo "THIS IS NEW YAML"
+          echo "FIND DNSCRYPT BUILD SOURCE"
           echo "=========================="
 
 
@@ -22,35 +22,60 @@ jobs:
 
       - name: Show repository
         run: |
-          echo "Current directory:"
           pwd
-
-          echo "Files:"
           ls -la
 
 
-      - name: Search dnscrypt
+      - name: Search build directory
         run: |
-          echo "===== Search dnscrypt ====="
+          echo "===== build directory ====="
 
-          find . \
-          \( -iname "*dnscrypt*" -o -iname "*Dnscrypt*" \) \
+          find build \
+          -maxdepth 5 \
+          -type f \
           -print || true
 
 
-      - name: Search Dnscryptproxy header
+      - name: Search scripts
         run: |
-          echo "===== Search header ====="
+          echo "===== scripts ====="
 
           find . \
-          -name "Dnscryptproxy.h" \
+          \( \
+          -name "*.sh" \
+          -o -name "Makefile" \
+          -o -name "*.mk" \
+          -o -name "*.py" \
+          \) \
           -print || true
 
 
-      - name: Search framework
+      - name: Search dnscrypt source
         run: |
-          echo "===== Search framework ====="
+          echo "===== dnscrypt source ====="
 
           find . \
-          -name "*.framework" \
+          \( \
+          -iname "*dnscrypt*" \
+          -o -iname "*libdns*" \
+          -o -iname "*proxy*" \
+          \) \
           -print || true
+
+
+      - name: Check git tracked files
+        run: |
+          echo "===== git files ====="
+
+          git ls-files | grep -Ei \
+          "dnscrypt|framework|build|script|make" \
+          || true
+
+
+      - name: Search Xcode reference
+        run: |
+          echo "===== xcode reference ====="
+
+          grep -R "Dnscryptproxy" \
+          platforms/ios \
+          || true
