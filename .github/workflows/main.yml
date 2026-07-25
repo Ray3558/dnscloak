@@ -1,0 +1,57 @@
+name: Locate DNSCloak Cordova
+
+on:
+  workflow_dispatch:
+
+jobs:
+  locate:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Show files
+        run: |
+          echo "PWD:"
+          pwd
+
+          echo "ROOT:"
+          ls -la
+
+      - name: Find possible Cordova roots
+        run: |
+          echo "=== config.xml ==="
+          find . \
+            -path "./node_modules" -prune -o \
+            -path "./platforms" -prune -o \
+            -name config.xml -print
+
+          echo ""
+          echo "=== package.json ==="
+          find . \
+            -path "./node_modules" -prune -o \
+            -path "./platforms" -prune -o \
+            -name package.json -print
+
+      - name: Check candidates
+        run: |
+          for f in $(find . \
+            -path "./node_modules" -prune -o \
+            -path "./platforms" -prune -o \
+            -name config.xml -print); do
+
+            DIR=$(dirname "$f")
+
+            echo "===== Checking $DIR ====="
+            ls -la "$DIR"
+
+            if [ -d "$DIR/www" ]; then
+              echo "FOUND CORDOVA ROOT: $DIR"
+            fi
+
+            if [ -d "$DIR/plugins" ]; then
+              echo "HAS PLUGINS: $DIR"
+            fi
+
+          done
