@@ -19,26 +19,27 @@ jobs:
           xcodebuild -version
 
 
-      - name: Show files
+      - name: Show project files
         run: |
           pwd
           ls -la
+          echo "===== platforms ====="
+          ls -la platforms || true
 
 
-      - name: Check Dnscryptproxy framework
+      - name: Search Dnscryptproxy
         run: |
-          echo "===== Search Dnscryptproxy.h ====="
+          echo "===== Search dnscrypt ====="
 
           find . \
-          \( -name "Dnscryptproxy.h" -o -name "Dnscryptproxy.framework" \) \
+          \( -iname "*dnscrypt*" -o -iname "*Dnscrypt*" \) \
           -print || true
 
 
-          echo "===== Framework directory ====="
+          echo "===== Search header ====="
 
-          find . -maxdepth 4 \
-          -type d \
-          -name "*framework" \
+          find . \
+          -name "Dnscryptproxy.h" \
           -print || true
 
 
@@ -50,25 +51,41 @@ jobs:
           's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
 
 
-      - name: Build
+      - name: Check Xcode project
+        run: |
+          cd platforms/ios
+
+          xcodebuild \
+          -list \
+          -project DNSCryptApp.xcodeproj
+
+
+      - name: Build iOS Debug
         continue-on-error: true
         run: |
           cd platforms/ios
 
           xcodebuild \
-            -project DNSCryptApp.xcodeproj \
-            -scheme DNSCryptApp \
-            -configuration Debug \
-            -sdk iphoneos \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            -verbose \
-            2>&1 | tee build.log
+          -project DNSCryptApp.xcodeproj \
+          -scheme DNSCryptApp \
+          -configuration Debug \
+          -sdk iphoneos \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          -verbose \
+          2>&1 | tee build.log
 
 
-      - name: Show Dnscryptproxy error
+      - name: Extract error
         run: |
-          echo "===== ERROR ====="
+          echo "===== ERROR MESSAGE ====="
+
+          grep -i -A10 -B10 \
+          "error:" \
+          platforms/ios/build.log || true
+
+
+          echo "===== Dnscryptproxy ====="
 
           grep -i -A10 -B10 \
           "Dnscryptproxy" \
@@ -78,5 +95,5 @@ jobs:
       - name: Upload log
         uses: actions/upload-artifact@v4
         with:
-          name: dnscloak-build-log
+          name: DNSCloak-debug-log
           path: platforms/ios/build.log
