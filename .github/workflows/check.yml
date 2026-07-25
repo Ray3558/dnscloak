@@ -1,0 +1,36 @@
+name: Check Git History
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Search Dnscryptproxy history
+        run: |
+          echo "===== Git log Dnscryptproxy ====="
+
+          git log --all --name-only --pretty=format: \
+          | grep -i "Dnscryptproxy" || true
+
+
+      - name: Search framework history
+        run: |
+          echo "===== Framework history ====="
+
+          git log --all --name-only --pretty=format: \
+          | grep -i "framework" || true
+
+
+      - name: Show commits touching gitignore
+        run: |
+          echo "===== gitignore history ====="
+
+          git log --all -- platforms/ios/.gitignore
