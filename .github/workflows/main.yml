@@ -1,0 +1,72 @@
+name: Check DNSCloak Cordova
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: macos-14
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 12
+          architecture: x64
+
+
+      - name: Show project root
+        run: |
+          pwd
+          ls -la
+
+
+      - name: Install npm dependencies
+        run: |
+          npm install --ignore-scripts
+
+
+      - name: Install Cordova CLI
+        run: |
+          npm install -g cordova@8.1.2
+
+
+      - name: Check Cordova CLI
+        run: |
+          which cordova
+          cordova -v
+
+
+      - name: Verify config.xml
+        run: |
+          echo "===== config.xml ====="
+          head -40 config.xml
+
+
+      - name: Verify Cordova structure
+        run: |
+          echo "Checking folders..."
+
+          test -f config.xml && echo "config.xml OK"
+          test -d platforms && echo "platforms OK"
+          test -d plugins && echo "plugins OK"
+
+
+      - name: Cordova requirements
+        run: |
+          cordova requirements
+
+
+      - name: Cordova platform list
+        run: |
+          cordova platform ls
+
+
+      - name: Cordova plugin list
+        run: |
+          cordova plugin ls
