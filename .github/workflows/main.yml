@@ -1,4 +1,4 @@
-name: Build DNSCloak iOS IPA
+name: Debug DNSCloak iOS Build
 
 on:
   workflow_dispatch:
@@ -26,20 +26,6 @@ jobs:
           ls -la platforms/ios
 
 
-      - name: Install Node dependencies
-        run: |
-          npm install --ignore-scripts || true
-
-
-      - name: Check Xcode project
-        run: |
-          cd platforms/ios
-
-          xcodebuild \
-            -list \
-            -project DNSCryptApp.xcodeproj
-
-
       - name: Fix iOS Deployment Target
         run: |
           echo "Before:"
@@ -54,7 +40,25 @@ jobs:
           grep -R "IPHONEOS_DEPLOYMENT_TARGET" platforms/ios || true
 
 
-      - name: Build iOS Debug without signing
+      - name: Check Scheme
+        run: |
+          cd platforms/ios
+
+          xcodebuild \
+            -list \
+            -project DNSCryptApp.xcodeproj
+
+
+      - name: Show DNSCryptThread source
+        run: |
+          echo "===== DNSCryptThread.m ====="
+
+          sed -n '1,260p' \
+          platforms/ios/DNSCryptAppExt/DNSCryptThread.m || true
+
+
+      - name: Build with full log
+        continue-on-error: true
         run: |
           cd platforms/ios
 
@@ -64,30 +68,33 @@ jobs:
             -configuration Debug \
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO \
+            -verbose \
+            2>&1 | tee build.log
 
 
-      - name: Check App Output
+      - name: Extract errors
         run: |
-          ls -lah platforms/ios/build/Debug-iphoneos
+          echo "========== ERROR =========="
+
+          grep -i -A15 -B15 "error:" \
+          platforms/ios/build.log || true
 
 
-      - name: Create IPA
-        run: |
-          cd platforms/ios
+          echo "========== DNSCryptThread =========="
 
-          rm -rf Payload
-          mkdir Payload
-
-          cp -R \
-          build/Debug-iphoneos/DNSCryptApp.app \
-          Payload/
-
-          zip -r DNSCryptApp.ipa Payload
+          grep -i -A10 -B10 "DNSCryptThread" \
+          platforms/ios/build.log || true
 
 
-      - name: Upload IPA
+          echo "========== FAILED COMMAND =========="
+
+          grep -i "CompileC" \
+          platforms/ios/build.log || true
+
+
+      - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
-          name: DNSCryptApp-IPA
-          path: platforms/ios/DNSCryptApp.ipa
+          name: DNSCryptApp-debug-log
+          path: platforms/ios/build.log
