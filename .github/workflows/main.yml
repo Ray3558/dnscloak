@@ -1,0 +1,61 @@
+name: Test DNSCloak Cordova Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Show Node and npm version
+        run: |
+          node -v
+          npm -v
+
+      - name: Install npm dependencies
+        run: |
+          npm install
+
+      - name: Install Cordova
+        run: |
+          npm install -g cordova
+
+      - name: Show Cordova version
+        run: |
+          cordova -v
+
+      - name: Prepare iOS project
+        run: |
+          cordova prepare ios
+
+      - name: Check iOS project
+        run: |
+          find platforms/ios -name "*.xcodeproj"
+          find platforms/ios -name "*.xcworkspace"
+
+      - name: List Xcode schemes
+        run: |
+          cd platforms/ios
+          xcodebuild -list -project DNSCryptApp.xcodeproj
+
+      - name: Check iOS deployment target
+        run: |
+          grep -R "IPHONEOS_DEPLOYMENT_TARGET" platforms/ios || true
+
+      - name: Check Swift version
+        run: |
+          grep -R "SWIFT_VERSION" platforms/ios || true
