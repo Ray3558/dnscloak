@@ -1,0 +1,67 @@
+name: Check DNSCloak Project Structure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 12
+          architecture: x64
+
+      - name: Show environment
+        run: |
+          node -v
+          npm -v
+          pwd
+
+      - name: Install npm dependencies
+        run: |
+          npm install --ignore-scripts
+
+      - name: Show project structure
+        run: |
+          echo "===== ROOT FILES ====="
+          ls -la
+
+          echo "===== Cordova config.xml ====="
+          find . -name "config.xml"
+
+          echo "===== package.json ====="
+          find . -name "package.json"
+
+          echo "===== Xcode projects ====="
+          find . -name "*.xcodeproj"
+
+          echo "===== iOS folders ====="
+          find . -type d -name "ios"
+
+      - name: Check Cordova location
+        run: |
+          if [ -f "config.xml" ]; then
+            echo "Cordova root is current directory"
+          else
+            echo "config.xml not found in current directory"
+          fi
+
+      - name: Check existing iOS project
+        run: |
+          if [ -d "platforms/ios" ]; then
+            echo "Existing platforms/ios found"
+            ls -la platforms/ios
+          else
+            echo "No platforms/ios in root"
+          fi
