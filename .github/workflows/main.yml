@@ -1,119 +1,56 @@
-name: Debug DNSCloak Framework
+name: Test New Workflow
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  test:
     runs-on: macos-14
 
     steps:
+
+      - name: TEST NEW YAML
+        run: |
+          echo "=========================="
+          echo "THIS IS NEW YAML"
+          echo "=========================="
+
 
       - name: Checkout source
         uses: actions/checkout@v4
 
 
-      - name: Select Xcode 15.4
+      - name: Show repository
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app
-          xcodebuild -version
-
-
-      - name: Show project structure
-        run: |
+          echo "Current directory:"
           pwd
-          echo "===== ROOT ====="
+
+          echo "Files:"
           ls -la
 
-          echo "===== platforms/ios ====="
-          ls -la platforms/ios
 
-
-      - name: Search dnscrypt files
+      - name: Search dnscrypt
         run: |
-          echo "===== dnscrypt ====="
+          echo "===== Search dnscrypt ====="
 
           find . \
-          \( -iname "*dnscrypt*" \
-          -o -iname "*Dnscrypt*" \
-          -o -iname "*libdns*" \) \
+          \( -iname "*dnscrypt*" -o -iname "*Dnscrypt*" \) \
           -print || true
 
 
-      - name: Search framework
+      - name: Search Dnscryptproxy header
         run: |
-          echo "===== Framework ====="
-
-          find . \
-          -type d \
-          -name "*.framework" \
-          -print || true
-
-
-      - name: Search header
-        run: |
-          echo "===== Header ====="
+          echo "===== Search header ====="
 
           find . \
           -name "Dnscryptproxy.h" \
           -print || true
 
 
-      - name: Check Xcode reference
+      - name: Search framework
         run: |
-          echo "===== Xcode reference ====="
-
-          grep -R "Dnscryptproxy" \
-          platforms/ios/DNSCryptApp.xcodeproj \
-          || true
-
-
-      - name: Check build scripts
-        run: |
-          echo "===== scripts ====="
+          echo "===== Search framework ====="
 
           find . \
-          -maxdepth 3 \
-          -type f \
-          \( -name "*.sh" -o -name "*.mk" -o -name "Makefile" \) \
+          -name "*.framework" \
           -print || true
-
-
-      - name: Fix Deployment Target
-        run: |
-          find platforms/ios \
-          -name "*.pbxproj" \
-          -exec sed -i '' \
-          's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
-
-
-      - name: Build iOS
-        continue-on-error: true
-        run: |
-          cd platforms/ios
-
-          xcodebuild \
-          -project DNSCryptApp.xcodeproj \
-          -scheme DNSCryptApp \
-          -configuration Debug \
-          -sdk iphoneos \
-          CODE_SIGNING_ALLOWED=NO \
-          CODE_SIGNING_REQUIRED=NO \
-          -verbose \
-          2>&1 | tee build.log
-
-
-      - name: Show errors
-        run: |
-          echo "===== Errors ====="
-
-          grep -i -A10 -B10 \
-          "error:" \
-          platforms/ios/build.log || true
-
-
-      - name: Upload log
-        uses: actions/upload-artifact@v4
-        with:
-          name: dnscloak-debug
-          path: platforms/ios/build.log
