@@ -1,0 +1,115 @@
+name: Build DNSCloak iOS Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 12
+          architecture: x64
+
+      - name: Show Node version
+        run: |
+          node -v
+          npm -v
+
+      - name: Install npm dependencies
+        run: |
+          npm install --ignore-scripts
+
+      - name: Install Cordova
+        run: |
+          npm install -g cordova@8
+
+      - name: Show Cordova version
+        run: |
+          cordova -v
+
+      - name: Find Cordova root directory
+        run: |
+          echo "Searching Cordova project..."
+
+          CORDOVA_DIR=$(find . \
+            -name config.xml \
+            -not -path "./platforms/*" \
+            -not -path "*/platforms/*" \
+            -exec dirname {} \; | head -n 1)
+
+          echo "Cordova directory:"
+          echo "$CORDOVA_DIR"
+
+          echo "Directory content:"
+          ls -la "$CORDOVA_DIR"
+
+          if [ -z "$CORDOVA_DIR" ]; then
+            echo "Cordova project not found"
+            exit 1
+          fi
+
+          echo "CORDOVA_DIR=$CORDOVA_DIR" >> $GITHUB_ENV
+
+      - name: Prepare iOS project
+        run: |
+          cd "$CORDOVA_DIR"
+
+          echo "Current directory:"
+          pwd
+
+          echo "Files:"
+          ls -la
+
+          cordova prepare ios
+
+      - name: Locate Xcode project
+        run: |
+          find "$CORDOVA_DIR" -name "*.xcodeproj"
+          find "$CORDOVA_DIR" -name "*.xcworkspace"
+
+      - name: List Xcode schemes
+        run: |
+          PROJECT=$(find "$CORDOVA_DIR" \
+            -name "DNSCryptApp.xcodeproj" | head -n 1)
+
+          echo "Using project:"
+          echo "$PROJECT"
+
+          xcodebuild -list -project "$PROJECT"
+
+      - name: Build iOS Debug without signing
+        run: |
+          PROJECT=$(find "$CORDOVA_DIR" \
+            -name "DNSCryptApp.xcodeproj" | head -n 1)
+
+          PROJECT_DIR=$(dirname "$PROJECT")
+
+          cd "$PROJECT_DIR"
+
+          xcodebuild \
+            -project DNSCryptApp.xcodeproj \
+            -scheme DNSCryptApp \
+            -configuration Debug \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Check Deployment Target
+        run: |
+          grep -R "IPHONEOS_DEPLOYMENT_TARGET" "$CORDOVA_DIR" || true
+
+      - name: Check Swift Version
+        run: |
+          grep -R "SWIFT_VERSION" "$CORDOVA_DIR" || true
