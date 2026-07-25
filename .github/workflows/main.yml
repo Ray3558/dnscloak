@@ -1,0 +1,93 @@
+name: Build DNSCloak iOS Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 12
+          architecture: x64
+
+      - name: Show Node version
+        run: |
+          node -v
+          npm -v
+
+      - name: Find Cordova project
+        run: |
+          echo "Searching config.xml..."
+          find . -name "config.xml"
+
+      - name: Install npm dependencies
+        run: |
+          npm install --ignore-scripts
+
+      - name: Install Cordova
+        run: |
+          npm install -g cordova@8
+
+      - name: Show Cordova version
+        run: |
+          cordova -v
+
+      - name: Prepare iOS project
+        run: |
+          CORDOVA_DIR=$(dirname "$(find . -name config.xml | head -n 1)")
+
+          echo "Cordova directory:"
+          echo "$CORDOVA_DIR"
+
+          cd "$CORDOVA_DIR"
+
+          cordova prepare ios
+
+      - name: Locate Xcode project
+        run: |
+          find . -name "*.xcodeproj"
+          find . -name "*.xcworkspace"
+
+      - name: List Xcode schemes
+        run: |
+          PROJECT=$(find . -name "DNSCryptApp.xcodeproj" | head -n 1)
+
+          echo "Project:"
+          echo "$PROJECT"
+
+          xcodebuild -list -project "$PROJECT"
+
+      - name: Build iOS Debug without signing
+        run: |
+          PROJECT=$(find . -name "DNSCryptApp.xcodeproj" | head -n 1)
+          PROJECT_DIR=$(dirname "$PROJECT")
+
+          cd "$PROJECT_DIR"
+
+          xcodebuild \
+            -project DNSCryptApp.xcodeproj \
+            -scheme DNSCryptApp \
+            -configuration Debug \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Check Deployment Target
+        run: |
+          grep -R "IPHONEOS_DEPLOYMENT_TARGET" . || true
+
+      - name: Check Swift Version
+        run: |
+          grep -R "SWIFT_VERSION" . || true
