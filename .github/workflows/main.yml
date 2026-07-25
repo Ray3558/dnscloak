@@ -1,0 +1,93 @@
+name: Build DNSCloak iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+
+      - name: Show project
+        run: |
+          pwd
+          ls -la
+          ls -la platforms/ios
+
+
+      - name: Install Node dependencies
+        run: |
+          npm install --ignore-scripts || true
+
+
+      - name: Check Xcode project
+        run: |
+          cd platforms/ios
+
+          xcodebuild \
+            -list \
+            -project DNSCryptApp.xcodeproj
+
+
+      - name: Fix iOS Deployment Target
+        run: |
+          echo "Before:"
+          grep -R "IPHONEOS_DEPLOYMENT_TARGET" platforms/ios || true
+
+          find platforms/ios \
+            -name "*.pbxproj" \
+            -exec sed -i '' \
+            's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
+
+          echo "After:"
+          grep -R "IPHONEOS_DEPLOYMENT_TARGET" platforms/ios || true
+
+
+      - name: Build iOS Debug without signing
+        run: |
+          cd platforms/ios
+
+          xcodebuild \
+            -project DNSCryptApp.xcodeproj \
+            -scheme DNSCryptApp \
+            -configuration Debug \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+
+      - name: Check App Output
+        run: |
+          ls -lah platforms/ios/build/Debug-iphoneos
+
+
+      - name: Create IPA
+        run: |
+          cd platforms/ios
+
+          rm -rf Payload
+          mkdir Payload
+
+          cp -R \
+          build/Debug-iphoneos/DNSCryptApp.app \
+          Payload/
+
+          zip -r DNSCryptApp.ipa Payload
+
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: DNSCryptApp-IPA
+          path: platforms/ios/DNSCryptApp.ipa
