@@ -1,4 +1,4 @@
-name: Debug DNSCloak iOS Build
+name: Debug DNSCloak Framework
 
 on:
   workflow_dispatch:
@@ -19,27 +19,63 @@ jobs:
           xcodebuild -version
 
 
-      - name: Show project files
+      - name: Show project structure
         run: |
           pwd
+          echo "===== ROOT ====="
           ls -la
-          echo "===== platforms ====="
-          ls -la platforms || true
+
+          echo "===== platforms/ios ====="
+          ls -la platforms/ios
 
 
-      - name: Search Dnscryptproxy
+      - name: Search dnscrypt files
         run: |
-          echo "===== Search dnscrypt ====="
+          echo "===== dnscrypt ====="
 
           find . \
-          \( -iname "*dnscrypt*" -o -iname "*Dnscrypt*" \) \
+          \( -iname "*dnscrypt*" \
+          -o -iname "*Dnscrypt*" \
+          -o -iname "*libdns*" \) \
           -print || true
 
 
-          echo "===== Search header ====="
+      - name: Search framework
+        run: |
+          echo "===== Framework ====="
+
+          find . \
+          -type d \
+          -name "*.framework" \
+          -print || true
+
+
+      - name: Search header
+        run: |
+          echo "===== Header ====="
 
           find . \
           -name "Dnscryptproxy.h" \
+          -print || true
+
+
+      - name: Check Xcode reference
+        run: |
+          echo "===== Xcode reference ====="
+
+          grep -R "Dnscryptproxy" \
+          platforms/ios/DNSCryptApp.xcodeproj \
+          || true
+
+
+      - name: Check build scripts
+        run: |
+          echo "===== scripts ====="
+
+          find . \
+          -maxdepth 3 \
+          -type f \
+          \( -name "*.sh" -o -name "*.mk" -o -name "Makefile" \) \
           -print || true
 
 
@@ -51,16 +87,7 @@ jobs:
           's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
 
 
-      - name: Check Xcode project
-        run: |
-          cd platforms/ios
-
-          xcodebuild \
-          -list \
-          -project DNSCryptApp.xcodeproj
-
-
-      - name: Build iOS Debug
+      - name: Build iOS
         continue-on-error: true
         run: |
           cd platforms/ios
@@ -76,24 +103,17 @@ jobs:
           2>&1 | tee build.log
 
 
-      - name: Extract error
+      - name: Show errors
         run: |
-          echo "===== ERROR MESSAGE ====="
+          echo "===== Errors ====="
 
           grep -i -A10 -B10 \
           "error:" \
           platforms/ios/build.log || true
 
 
-          echo "===== Dnscryptproxy ====="
-
-          grep -i -A10 -B10 \
-          "Dnscryptproxy" \
-          platforms/ios/build.log || true
-
-
       - name: Upload log
         uses: actions/upload-artifact@v4
         with:
-          name: DNSCloak-debug-log
+          name: dnscloak-debug
           path: platforms/ios/build.log
