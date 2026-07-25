@@ -1,0 +1,53 @@
+name: Build DNSCloak iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+
+      - name: Select Xcode 15.4
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+
+      - name: Show project
+        run: |
+          pwd
+          ls -la
+          ls -la platforms/ios
+
+
+      - name: Install Node dependencies
+        run: |
+          npm install --ignore-scripts || true
+
+
+      - name: Check Xcode project
+        run: |
+          cd platforms/ios
+
+          xcodebuild \
+            -list \
+            -project DNSCryptApp.xcodeproj
+
+
+      - name: Build iOS Debug
+        run: |
+          cd platforms/ios
+
+          xcodebuild \
+            -project DNSCryptApp.xcodeproj \
+            -scheme DNSCryptApp \
+            -configuration Debug \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
