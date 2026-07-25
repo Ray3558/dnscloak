@@ -19,45 +19,38 @@ jobs:
           xcodebuild -version
 
 
-      - name: Show project
+      - name: Show files
         run: |
           pwd
           ls -la
-          ls -la platforms/ios
 
 
-      - name: Fix iOS Deployment Target
+      - name: Check Dnscryptproxy framework
         run: |
-          echo "Before:"
-          grep -R "IPHONEOS_DEPLOYMENT_TARGET" platforms/ios || true
+          echo "===== Search Dnscryptproxy.h ====="
 
+          find . \
+          \( -name "Dnscryptproxy.h" -o -name "Dnscryptproxy.framework" \) \
+          -print || true
+
+
+          echo "===== Framework directory ====="
+
+          find . -maxdepth 4 \
+          -type d \
+          -name "*framework" \
+          -print || true
+
+
+      - name: Fix Deployment Target
+        run: |
           find platforms/ios \
-            -name "*.pbxproj" \
-            -exec sed -i '' \
-            's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
-
-          echo "After:"
-          grep -R "IPHONEOS_DEPLOYMENT_TARGET" platforms/ios || true
+          -name "*.pbxproj" \
+          -exec sed -i '' \
+          's/IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*/IPHONEOS_DEPLOYMENT_TARGET = 12.0/g' {} \;
 
 
-      - name: Check Scheme
-        run: |
-          cd platforms/ios
-
-          xcodebuild \
-            -list \
-            -project DNSCryptApp.xcodeproj
-
-
-      - name: Show DNSCryptThread source
-        run: |
-          echo "===== DNSCryptThread.m ====="
-
-          sed -n '1,260p' \
-          platforms/ios/DNSCryptAppExt/DNSCryptThread.m || true
-
-
-      - name: Build with full log
+      - name: Build
         continue-on-error: true
         run: |
           cd platforms/ios
@@ -73,28 +66,17 @@ jobs:
             2>&1 | tee build.log
 
 
-      - name: Extract errors
+      - name: Show Dnscryptproxy error
         run: |
-          echo "========== ERROR =========="
+          echo "===== ERROR ====="
 
-          grep -i -A15 -B15 "error:" \
+          grep -i -A10 -B10 \
+          "Dnscryptproxy" \
           platforms/ios/build.log || true
 
 
-          echo "========== DNSCryptThread =========="
-
-          grep -i -A10 -B10 "DNSCryptThread" \
-          platforms/ios/build.log || true
-
-
-          echo "========== FAILED COMMAND =========="
-
-          grep -i "CompileC" \
-          platforms/ios/build.log || true
-
-
-      - name: Upload build log
+      - name: Upload log
         uses: actions/upload-artifact@v4
         with:
-          name: DNSCryptApp-debug-log
+          name: dnscloak-build-log
           path: platforms/ios/build.log
